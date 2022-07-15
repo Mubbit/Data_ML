@@ -38,6 +38,7 @@ import socket
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen
 import requests
+import re
 class ParsePanrye:
     #check IP, set ID, connect
     def __init__(self) -> None:
@@ -49,15 +50,33 @@ class ParsePanrye:
               your ip: {}'''.format(ipaddr))
     def connect(self):
         self.myId=input('\ngive us your id').strip('\n')
-        self.apilink='https://www.law.go.kr/DRF/lawSearch.do?OC={self.myId}&target=prec&type=XML'
-        response = urlopen(self.apilink).read()
-        print(bs(response))
-    def connect2(self):
-        self.myId=input('\ngive us your id').strip('\n')
         self.apilink='https://www.law.go.kr/DRF/lawSearch.do?OC={}&target=prec&type=XML'.format(self.myId)
         response=requests.get(self.apilink)
         soup = bs(response.text, 'xml')
         return soup
+    def getPrecDetailLink(self):
+        soup=self.connect()
+        prec=soup.find_all('prec') # 리스트임
+        precDetail=[]
+        # for prec, get the link
+        for p in prec:
+            #find(pattern, str)
+            alink='https://law.go.kr'+re.sub('<[^>]*>', '', str(p.find('판례상세링크')))
+            alink=re.sub('amp;','',alink)
+            precDetail.append(alink)
+        return precDetail
+    def parsePrecDetail(self):
+        links=self.getPrecDetailLink()
+        #for prec, get connection
+        for l in links:
+            response=requests.get(l)
+            soup=bs(response.text,'html')
+            print(soup.findall('input'))
+            #parse html and get
+            ## 제목,요약, 본문 
+            #title=soup.find(id='precNm')
+            title=soup.select('input#precNm')
+            #print(title)
         
     def test_tokenizePerP(tx):
         pass
