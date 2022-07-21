@@ -69,15 +69,21 @@ class ParsePanrye:
     def parsePrecDetail(self):
 
         links=self.getPrecDetailLink() #우리가 구한 20개의 판례 링크들 
-        
+        self.detailLinks=[]
         #for prec, get connection
+        # 변환을 해도 되는데 그냥 찾기로 진행함
         for l in links:
             response=requests.get(l) #works well 
-            content=re.sub('\r\n\r\n','',response.text)
-            print(content)
+            content=re.sub('\n*','\n',response.text)
             soup=bs(content,'html.parser')
-            print('\nnext',soup.get_text())
+            self.detailLinks+=soup.find('input',id='url').get('value').split('\n')
             
+        for l in self.detailLinks:
+            response=requests.get(l)
+            content=re.sub('\r\n\r\n','',response.text)
+            soup=bs(content,'html.parser')
+            text=soup.get_text()
+            print('mode 1 traversal',re.sub('\r\n','',text))
             
             #parse html and get
             ## 제목,요약, 본문 
