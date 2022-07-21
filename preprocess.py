@@ -63,20 +63,26 @@ class ParsePanrye:
             #find(pattern, str)
             alink='https://law.go.kr'+re.sub('<[^>]*>', '', str(p.find('판례상세링크')))
             alink=re.sub('amp;','',alink)
+            alink=re.sub('&mobileYn=','',alink)
             precDetail.append(alink)
         return precDetail
     def parsePrecDetail(self):
-        links=self.getPrecDetailLink()
+
+        links=self.getPrecDetailLink() #우리가 구한 20개의 판례 링크들 
+        
         #for prec, get connection
         for l in links:
-            response=requests.get(l)
-            soup=bs(response.text,'html')
-            print(soup.findall('input'))
+            response=requests.get(l) #works well 
+            content=re.sub('\r\n\r\n','',response.text)
+            print(content)
+            soup=bs(content,'html.parser')
+            print('\nnext',soup.get_text())
+            
+            
             #parse html and get
             ## 제목,요약, 본문 
             #title=soup.find(id='precNm')
-            title=soup.select('input#precNm')
-            #print(title)
+            # #print(title)
         
     def test_tokenizePerP(tx):
         pass
