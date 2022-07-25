@@ -66,24 +66,30 @@ class ParsePanrye:
             alink=re.sub('&mobileYn=','',alink)
             precDetail.append(alink)
         return precDetail
-    def parsePrecDetail(self):
+    def parseMoreLinks(self):
 
         links=self.getPrecDetailLink() #우리가 구한 20개의 판례 링크들 
         self.detailLinks=[]
+        ids=[]
         #for prec, get connection
         # 변환을 해도 되는데 그냥 찾기로 진행함
         for l in links:
+            ids.append(re.findall('[0-9]{6}',l))
             response=requests.get(l) #works well 
-            content=re.sub('\n*','\n',response.text)
+            content=response.text
             soup=bs(content,'html.parser')
-            self.detailLinks+=soup.find('input',id='url').get('value').split('\n')
-            
+            self.detailLinks.append(soup.find('input',type='hidden',id='url').get('value'))
+        return ids
+    def parsePrecDetail(self): 
+        ids=firstLsoups=self.parseMoreLinks()
         for l in self.detailLinks:
-            response=requests.get(l)
-            content=re.sub('\r\n\r\n','',response.text)
-            soup=bs(content,'html.parser')
-            text=soup.get_text()
-            print('mode 1 traversal',re.sub('\r\n','',text))
+            ids.append(re.findall('[0-9]{6}',l))
+            res=requests.get(l)
+            text=res.text
+            soup=bs(text,'html.parser')
+            interest=[t.get_text() for t in soup.find_all('p','pty4')]
+            print('mode 1 traversal',interest)
+        return ids
             
             #parse html and get
             ## 제목,요약, 본문 
