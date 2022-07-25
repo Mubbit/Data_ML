@@ -82,19 +82,13 @@ class ParsePanrye:
         return ids
     def parsePrecDetail(self): 
         ids=firstLsoups=self.parseMoreLinks()
-        for l in self.detailLinks:
-            ids.append(re.findall('[0-9]{6}',l))
+        match={}
+        text={}
+        for l,id in zip(self.detailLinks,ids,ids):\
+            match[id]=l
             res=requests.get(l)
             text=res.text
             soup=bs(text,'html.parser')
             interest=[t.get_text() for t in soup.find_all('p','pty4')]
-            print('mode 1 traversal',interest)
-        return ids
-            
-            #parse html and get
-            ## 제목,요약, 본문 
-            #title=soup.find(id='precNm')
-            # #print(title)
-        
-    def test_tokenizePerP(tx):
-        pass
+            text[id]=interest
+        return match, text
