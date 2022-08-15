@@ -1,6 +1,7 @@
 #files
 analysis_note.txt
 '추후 할일.txt'
-
+not_good_preprocess.py
+test_preprocess.ipynb
 #directories
 법률 지식베이스
