@@ -32,6 +32,8 @@ class Cleanse:
     def group_law(self,data):
         for p in patterns:
             data=self.remove_s(p,data)
+        
+        data=re.sub(',','$',data)#이제부터 쉼표는$
         return data
     
     #문단 자르기 
