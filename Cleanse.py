@@ -6,6 +6,7 @@ import numpy as np
 
 patterns=[
     re.compile('[가-힣]+법\s제[0-9]+조\s제[0-9]+항\s제[0-9]호',flags=re.I|re.X),
+    re.compile('[가-힣]+법\s제[0-9]+조\s제[0-9]호',flags=re.I|re.X),
 	re.compile('[가-힣]+법\s[가-힣]+령\s제[0-9]+조\s제[0-9]+항\s제[0-9]호',flags=re.I|re.X),
 	re.compile('[가-힣]+법\s[가-힣]+규칙\s제[0-9]+조\s제[0-9]+항\s제[0-9]호',flags=re.I|re.X),
 	re.compile('[가-힣]+법\s[가-힣]+령\s제[0-9]+조\s제[0-9]+항',flags=re.I|re.X),
@@ -17,14 +18,17 @@ patterns=[
 	re.compile('[가-힣]+법\s[가-힣]+령',flags=re.I|re.X),
 	re.compile('[가-힣]+법\s[가-힣]+규칙',flags=re.I|re.X),
  ]
+datepattern= re.compile('([0-9]+).\s([0-9]+).\s([0-9]+)',flags=re.I|re.X)
 class Cleanse:
     global patterns
 
     #문장 하나에 대해서
     def remove_s(self,pattern,t): 
+        #cleanse law
         got=re.findall(pattern,t)
         for s in got:
             alt=re.sub('\s','_',s)
+            alt=re.sub('[\·]','_',alt)
             #print(alt)
             t=re.sub(s,alt,t)
         return t
@@ -34,17 +38,13 @@ class Cleanse:
             data=self.remove_s(p,data)
         
         data=re.sub(',','$',data)#이제부터 쉼표는$
-        return data
+        fin=re.sub(datepattern,r'\1\2\3',data)#cleanse date
+        return fin
     
     #문단 자르기 
     def cut_meaning(self,data):
-        splitted=re.split('\[[0-9]+\]',data)
-        a=splitted
-        for p in splitted:
-            if bool(re.match('\s+',p)) or p=="":
-                a.remove(p)
-
-        return a
+        splitted=re.split('\[[0-9]+\]',data)[1:]
+        return splitted
     
     def tokenize(self,data):
         kkma=Kkma()
@@ -63,6 +63,7 @@ class Cleanse:
                     current=np.reshape(np.array(position),(1,-1))
                     current=pd.DataFrame(current,columns=['sent_id','eojeol_id','vocab','pos'])
                     word_dict=pd.concat((word_dict,current),axis=0)
+        
         return word_dict, highlightable
  
 class Cleansed_iterated:
@@ -73,12 +74,10 @@ class Cleansed_iterated:
         self.passage_id=0
         self.passage=None
         self.pid=None
-        self.word_dict=None
-        self.highlightable=None
-        return self
-    def __next__(self):
         self.word_dict=[]
         self.highlightable=[]
+        return self
+    def __next__(self):
         self.passage=self.df.iloc[self.passage_id]
         self.pid=self.passage['판례일련번호']
         data=self.cleanser.group_law(self.passage['판결요지'])
