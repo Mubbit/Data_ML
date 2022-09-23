@@ -32,7 +32,7 @@ class Cleanse:
             #print(alt)
             t=re.sub(s,alt,t)
         return t
-    #문단 하나에 대해서
+    #문단 하나에 대해서 법률 단어는 연결시켜놓기 
     def group_law(self,data):
         for p in patterns:
             data=self.remove_s(p,data)
