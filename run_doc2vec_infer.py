@@ -1,5 +1,6 @@
 #for new panrye, get doc2vec 
 from data_preprocess_doc2vec import PreProcess
+from gensim import Word2Vec
 def getdoc2vec(s,stop_words_list,modelpath):
   #cleanse data
   p=PreProcess(s)
