@@ -12,8 +12,9 @@ class PreProcess:
   def __init__(self,case):
     self.orig_df=case
   #1 df
-  def set(self,columns=['사건명','판시사항','판결요지','판례내용']):
+  def set(self,columns=['datanumber','holding','summary','prny']):
     df=self.orig_df.copy()
+    df['datanumber']=df['datanumber'].apply(str)
     df_joined=df[columns].agg(lambda x: ' '.join(x.values), axis=1).T
 
     self.df=pd.DataFrame(df_joined,columns=['text'])
@@ -88,23 +89,79 @@ class PreProcess:
     self.filter()
     return self.tokenize_inference(stop_words_list)
 
+
+from sklearn.metrics.pairwise import cosine_similarity
+
+#랭킹 진행하고... 열 추가하기 
+class Rank:
+  def __init__(self,q,model):
+    self.q=q 
+    self.model=model
+  def wmddistance(self,other):
+    return self.model.wmdistance(self.q,other)
+  def cosdistance(self,other):
+    return cosine_similarity(self.q,other)
+
+def second_largest_index(li):
+  first=0
+  second=0
+  first=max(li) 
+  first_index=li.index(first)
+  if first_index<len(li)-1:
+    second=max(li[:first_index]+li[first_index+1:])
+    second_index=li.index(second)
+  else:
+    second=max(li[:-1])
+    second_index=li.index(second)
+  return second,second_index
+def ranking(qv,vectors,model,t='wmd'): #find most similar item per item 
+  ranker=Rank(qv,model)
+  if t=='wmd':
+    sim=list(map(ranker.wmddistance,vectors))
+    max_sim_vec,max_sim_index=second_largest_index(sim)
+  elif t=='cos':
+    sim=list(map(ranker.cosdistance,vectors))
+    max_sim_vec,max_sim_index=second_largest_index(sim)
+  return max_sim_vec,max_sim_index 
+def recommend(cases,model,path_to_file):
+  recommendation=[]
+  for i,vector in enumerate(cases['vector'].values):
+    max_rank_vec,max_rank_index=ranking(case,cases,model)
+    next_item=cases.loc[i,['datanumber']]
+    recommendation.append(next_item)
+  cases=pd.concat([cases,pd.DataFrame(recommendation,columns=['nextid'])],axis=1)
+  cases.to_csv(osp.join(path_to_file,'case_list_with_textrank_with_nextid.csv'))
+    
 if __name__=='__main__':
-    case=pd.read_csv('case_list.csv')
+    case=pd.read_csv('case_list_with_textrank.csv')
     p=PreProcess(case)
     tokens,stop_words_list=p.run()
     
     documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokens)]
-    model = Doc2Vec(documents, vector_size=100, window=2, min_count=1, workers=4)
+    if osp.exists('doc2vec.model'):
+      model=Doc2Vec.load('D:\\PanryeAI\\doc2vec.model')
+    else:
+      model = Doc2Vec(documents, vector_size=100, window=2, min_count=1, workers=4)
+      model.save('doc2vec.model')
+      
+      
+    if osp.exists('doc2vec.npy'):
+      doc2vec_np=np.load('doc2vec.npy')
+    else:
+      doc2vec=[]
+      for tok in tokens:
+          vector = model.infer_vector(tok)
+          doc2vec.append(vector)
+      doc2vec_np=np.array(doc2vec) 
+      
+      np.save('doc2vec.npy',doc2vec_np)
+      np.save('stopwords.npy',np.array(stop_words_list))
+      
     
-    doc2vec=[]
-    for tok in tokens:
-        vector = model.infer_vector(tok)
-        doc2vec.append(vector)
-    doc2vec_np=np.array(doc2vec) 
     
-    np.save('doc2vec.npy',doc2vec_np)
-    np.save('stopwords.npy',np.array(stop_words_list))
-    model.save('doc2vec.model')
+    #ranking
+    case_w_vec=pd.concat([case,pd.DataFrame(list(map(str,doc2vec_np)),columns=['vector'])],axis=1)
+    recommend(case,model,'D:\PanryeAI')
     
     # 2차원 t-SNE 임베딩
     tsne_np = TSNE(n_components = 2).fit_transform(doc2vec)
