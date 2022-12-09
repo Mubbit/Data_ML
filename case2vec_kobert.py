@@ -45,4 +45,4 @@ out = model(input_ids = torch.tensor(inputs['input_ids']),
               attention_mask = torch.tensor(inputs['attention_mask']))
 
 
-torch.save(out.pooler_output, '../dataset/case_nm_tensor.pt')
+torch.save(out.pooler_output, 'case_nm_tensor.pt')

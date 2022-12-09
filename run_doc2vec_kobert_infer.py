@@ -1,7 +1,7 @@
 #for new panrye, get doc2vec 
-from data_preprocess_doc2vec import PreProcess
+from case2vec_doc2vec import PreProcess
 from gensim import Word2Vec
-def getdoc2vec(s,stop_words_list,modelpath):
+def getdoc2vec(s,modelpath,stop_words_list=['상 ','인 ','피 고 인']):
   #cleanse data
   p=PreProcess(s)
   tokens=p.run_infer(stop_words_list)
@@ -18,7 +18,16 @@ def getdoc2vec(s,stop_words_list,modelpath):
     vectors.append(model.infer_vector(tok))
   return vectors
 
-def getkobertvec(index,modelpath,pre_vec_path='case_to_vec.pt'):
-  cv=torch.load(pre_vec_path)
-  cvnpy=cv.detach().numpy()
-  return cvnpy[index]
+def getkobertvec(s,index,modelpath='case_to_vec.pt'):
+  
+  if index!=-1:
+    cv=torch.load(pre_vec_path)
+    cvnpy=cv.detach().numpy()
+  
+    return cvnpy[index]
+  else:
+    model.load_state_dict(torch.load(modelpath))
+    model.eval()
+    query_vec=model(s) 
+    return query_vec
+    
