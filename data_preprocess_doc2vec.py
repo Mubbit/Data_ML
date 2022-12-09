@@ -66,7 +66,7 @@ class PreProcess:
       maxlen=max(map(len,tokens_per_doc_cleansed))
       tokens_per_doc_cleansed_padded=[tokens+[0]*(maxlen-len(tokens)) for tokens in tokens_per_doc_cleansed]
       #save
-      print([l for l in list(map(len,tokens_per_doc_cleansed_padded))])
+      #print([l for l in list(map(len,tokens_per_doc_cleansed_padded))])
       if len(tokens_per_doc_cleansed_padded)==1:
         np.save('tokenized.npy',np.array(tokens_per_doc_cleansed_padded).reshape((1,)))
         
@@ -163,33 +163,36 @@ def recommend(cases,vectors,model,path_to_file,filename,t='cos'):
   recommendation=[]
   for i,vector in enumerate(vectors):
     max_rank_vec,max_rank_index=ranking(vector,vectors,model,t=t)
-    next_item=cases.loc[i,['datanumber']].values[0]
+    next_item=cases.loc[max_rank_index,['datanumber']].values[0]
     recommendation.append(next_item)
   cases=pd.concat([cases,pd.DataFrame(recommendation,columns=['next_id'])],axis=1)
   cases.to_csv(osp.join(path_to_file,filename))
 
 if __name__=='__main__':
-    case=pd.read_csv('case_list_with_textrank.csv')
+    #case=pd.read_csv('case_list_with_textrank.csv')
+    case=pd.read_csv('case_list_with_tfidf.csv')
     p=PreProcess(case)
     tokens,stop_words_list=p.run()
     
     documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(tokens)]
     common_texts=tokens
     
-    if osp.exists('doc2vec.model'):
+    remove=True
+    
+    if osp.exists('doc2vec.model') and remove==False:
       dmodel=Doc2Vec.load('D:\\PanryeAI\\doc2vec.model')
     else:
       dmodel = Doc2Vec(documents, vector_size=100, window=2, min_count=1, workers=4)
       dmodel.save('doc2vec.model')
-      
     
-    if osp.exists('word2vec.model'):
+    
+    '''if osp.exists('word2vec.model') and remove==False:
       wmodel=Doc2Vec.load('D:\\PanryeAI\\word2vec.model')
     else:
       wmodel=Word2Vec(sentences=common_texts, vector_size=100, window=5, min_count=1, workers=4)
-      wmodel.save('word2vec.model')
+      wmodel.save('word2vec.model')'''
       
-    if osp.exists('doc2vec.npy'):
+    if osp.exists('doc2vec.npy') and remove==False:
       doc2vec_np=np.load('doc2vec.npy')
     else:
       doc2vec=[]
@@ -206,7 +209,7 @@ if __name__=='__main__':
     #ranking
     
     recommend(case,doc2vec_np,dmodel,'D:\PanryeAI','case_list_w_doc2vec.csv',t='cos')
-    recommend(case,doc2vec_np,wmodel,'D:\PanryeAI','case_list_w_word2vec.csv',t='wmd')
+    #recommend(case,doc2vec_np,wmodel,'D:\PanryeAI','case_list_w_word2vec.csv',t='wmd')
     '''
     # 2차원 t-SNE 임베딩
     doc2vec=doc2vec_np.tolist()

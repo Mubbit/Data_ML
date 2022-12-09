@@ -52,5 +52,3 @@ if __name__=='__main__':
     case=pd.read_csv('case_list.csv')
     pre_process=PreProcess(case)
     #print(pre_process.filtered_df.head(5))
-    for sent in pre_process.filtered_df:
-        
